@@ -82,6 +82,6 @@ CONSTRAINTS:
 </hyperplan-round-4-task>
 
 ---
-PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{CACHE_PATH}} — absolute path to the cache directory (resolved in Phase 0). The planner reads all debate files from here.
+VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
+- {{CACHE_PATH}} — absolute path to the cache directory. The planner reads all debate files from here.
 - {{USER_REQUEST}} — the user's planning request, verbatim. Included so the planner can check distilled insights against the original intent.

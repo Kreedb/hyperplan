@@ -22,6 +22,6 @@ OUTPUT — Write your cross-attacks to {{CACHE_PATH}}/phase_2/{{MEMBER_NAME}}.md
 </hyperplan-round-2-task>
 
 ---
-PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{CACHE_PATH}} — absolute path to the cache directory (resolved in Phase 0).
+VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
+- {{CACHE_PATH}} — absolute path to the cache directory.
 - {{MEMBER_NAME}} — this member's name (the attacker).

@@ -29,6 +29,6 @@ Address EVERY finding of yours that was attacked. Findings not mentioned here ar
 </hyperplan-round-3-task>
 
 ---
-PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{CACHE_PATH}} — absolute path to the cache directory (resolved in Phase 0).
+VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
+- {{CACHE_PATH}} — absolute path to the cache directory.
 - {{MEMBER_NAME}} — this member's name (the defender).

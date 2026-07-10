@@ -24,7 +24,7 @@ Numbering matters — in Round 2, other members will reference your findings as 
 </hyperplan-round-1-task>
 
 ---
-PLACEHOLDERS (orchestrator substitutes before dispatch):
+VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
 - {{USER_REQUEST}} — the user's planning request, verbatim.
 - {{MEMBER_NAME}} — this member's name.
-- {{CACHE_PATH}} — absolute path to the cache directory (resolved in Phase 0).
+- {{CACHE_PATH}} — absolute path to the cache directory.
