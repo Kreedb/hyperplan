@@ -140,21 +140,21 @@ The Lead does NOT read any `references/*.md` — the agent reads its own system 
 
 1. Dispatch all members in **parallel** using the Unified dispatch shape (VARIABLES.md already has `ROUND: 1` from Phase 0). The calls go in a **single message** so they run concurrently.
 2. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_1/`. Do NOT read those files yourself.
-3. **Verify all member output files exist** in `<cache_path>/phase_1/` (enumeration command in NOTES). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded. Do NOT dispatch Round 2 until all member files are present (or the user approves a degraded roster).
+3. **Verify all member output files exist** in `<cache_path>/phase_1/` (enumeration command in NOTES). If any are missing, retry the failed member(s) once; if any still fail, ask the user whether to proceed with a degraded roster. Do NOT dispatch Round 2 until all member files are present (or the user approves a degraded roster).
 
 ### Phase 2: Round 2 — Cross-attack (read phase_1, write phase_2)
 
 1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 2` (use Edit to change only the `ROUND` line; leave the other 4 values untouched).
 2. Dispatch all members in **parallel** using the Unified dispatch shape. Each fresh agent reads all `phase_1/*.md` files, attacks all other members' findings, and writes to `<cache_path>/phase_2/<member_name>.md`.
 3. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_2/`.
-4. **Verify all member output files exist** in `<cache_path>/phase_2/` (enumeration command in NOTES). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
+4. **Verify all member output files exist** in `<cache_path>/phase_2/` (enumeration command in NOTES). If any are missing, retry the failed member(s) once; if any still fail, ask the user whether to proceed with a degraded roster.
 
 ### Phase 3: Round 3 — Defense and refinement (read phase_2 + own phase_1, write phase_3)
 
 1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 3` (use Edit to change only the `ROUND` line; leave the other 4 values untouched).
 2. Dispatch all members in **parallel** using the Unified dispatch shape. Each fresh agent reads its own `phase_1/<member_name>.md` AND all `phase_2/*.md` files, then defends/refines/concedes per finding and writes to `<cache_path>/phase_3/<member_name>.md`.
 3. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_3/`.
-4. **Verify all member output files exist** in `<cache_path>/phase_3/` (enumeration command in NOTES). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
+4. **Verify all member output files exist** in `<cache_path>/phase_3/` (enumeration command in NOTES). If any are missing, retry the failed member(s) once; if any still fail, ask the user whether to proceed with a degraded roster.
 
 ### Phase 4: Round 4 — Distillation + plan formalization + user confirmation
 
