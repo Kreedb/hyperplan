@@ -31,7 +31,7 @@ Categorize survivors into 4 buckets:
 STEP 3 — FORMALIZE THE EXECUTABLE PLAN
 Turn the distilled insights into discrete tasks. Structure each task for PARALLEL EXECUTION — the Lead will dispatch independent tasks concurrently in dependency-ordered waves. Minimize dependencies to maximize parallelism.
 
-RETURN the full plan as your final message. Do NOT use the Write tool — you do not have it. Do NOT enter plan mode. Do NOT use task management tools. The Lead will persist your output to {{CACHE_DIR}}/phase_4/plan.md. Use this EXACT format:
+Write the full plan to {{CACHE_DIR}}/phase_4/plan.md using the Write tool. Do NOT enter plan mode. Do NOT use task management tools, or any tool that requires user approval or reply. Return a one-line confirmation ('Plan written to {{CACHE_DIR}}/phase_4/plan.md') as your final message. Use this EXACT format:
 
 # Hyperplan Executable Plan: [task title]
 

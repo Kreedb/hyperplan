@@ -70,7 +70,7 @@ Members do NOT send messages to each other through the Lead. Instead, every memb
 
 You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirmation in Phase 4. The Agent tool runs dispatched agents concurrently when you issue multiple Agent calls in a single message — use this for every parallel round and every execution wave.
 
-**Critical separation**: You (the Lead) do NOT distill insights and do NOT write the plan. The Round 4 planner owns distillation + formalization in a single dispatch. You dispatch it, persist its output, present it to the user, gate execution on confirmation, then dispatch parallel execution waves. You never inline-plan.
+**Critical separation**: You (the Lead) do NOT distill insights and do NOT write the plan. The Round 4 planner owns distillation + formalization in a single dispatch — it writes the plan to `<cache_dir>/phase_4/plan.md` itself. You Read that file, present it to the user, gate execution on confirmation, then dispatch parallel execution waves. You never inline-plan.
 
 ### Tooling map (canonical dispatch shapes)
 
@@ -184,7 +184,7 @@ The team is done debating. You dispatch ONE planner to read all 15 cache files, 
 
 5. **User confirmation gate** — ask the user whether to proceed with execution. Three outcomes:
    - **Proceed** → advance to Phase 5 (parallel execution).
-   - **Modify** → take the user's requested changes and dispatch a FRESH planner using the same Round 4 dispatch shape. Append to the Round 4 task body: "The user reviewed the previous plan at `<cache_dir>/phase_4/plan.md` and requested these modifications: [user feedback]. Read the previous plan and revise it. You do NOT need to re-read the 15 debate files unless the feedback requires fundamental rethinking — the distilled insights are already in the previous plan." Overwrite `<cache_dir>/phase_4/plan.md` with the revised plan. Re-present to user. Loop until the user says proceed or abort.
+   - **Modify** → take the user's requested changes and dispatch a FRESH planner using the same Round 4 planner dispatch shape. Append to the Round 4 task body: "The user reviewed the previous plan at `<cache_dir>/phase_4/plan.md` and requested these modifications: [user feedback]. Read the previous plan and revise it. You do NOT need to re-read the 15 debate files unless the feedback requires fundamental rethinking — the distilled insights are already in the previous plan." The planner overwrites `<cache_dir>/phase_4/plan.md` with the revised plan. Re-Read it and re-present to user. Loop until the user says proceed or abort.
    - **Abort** → skip Phase 5, go directly to Phase 6 cleanup.
 
 DO NOT enter Phase 5 without explicit user confirmation. DO NOT pre-distill or pre-draft the plan yourself — the planner owns this. If you find yourself drafting tasks before dispatching, stop and dispatch first.
@@ -202,7 +202,7 @@ The user has confirmed the plan. You now execute it by dispatching parallel wave
       - The task's full description and success criteria from the plan.
       - Any hard constraints from the plan's "Distilled Insights" section that apply to this task.
       - Instruction to write a brief completion summary to `<cache_dir>/phase_5/<task-id>.md` (what was done, what files changed, whether success criteria were met).
-      - Tool restriction: "Do NOT spawn sub-agents (no Agent tool). Do NOT use SendMessage or AskUserQuestion. Do NOT enter plan mode. Do the task directly with Read/Write/Edit/Shell/Glob/Grep."
+      - Tool restriction: "Do NOT spawn sub-agents (no Agent tool). Do NOT use SendMessage, AskUserQuestion, NotifyUser, EnterPlanMode, task management tools, or any tool that requires user approval or reply."
    b. After the wave completes, Read the completion summaries under `<cache_dir>/phase_5/` to verify success criteria were met. If a task failed, surface the failure to the user before dispatching the next wave — ask whether to retry, skip, or abort.
 4. After the final wave completes, tell the user: "Hyperplan execution complete. [N] tasks executed across [M] waves." Summarize what changed in the workspace.
 5. Proceed to Phase 6.
@@ -247,6 +247,6 @@ If any step fails, surface the error and note that stray agents can be stopped v
 - The orchestrator NEVER reads `<cache_dir>/phase_1..3/` files. The round-4 planner reads them. Phases 1–3 coordinate timing only — member content flows member-to-member through the filesystem, never through the Lead.
 - Members read each other's files directly. The Round 2 template tells each fresh agent to Read all 5 `phase_1/*.md` files; the Round 3 template tells each fresh agent to Read its own `phase_1/<member>.md` (to recall its findings) AND all 5 `phase_2/*.md` files (to find attacks on itself). File formats in the templates are parse-critical — do not improvise them.
 - The skill explicitly forbids you from softening adversarial prompts. The hostility IS the mechanism.
-- The Round 4 planner is instructed (in `references/round-4-task.md`) NOT to use the Write tool — it returns the plan as its output, and you persist it to `<cache_dir>/phase_4/plan.md` yourself. If the planner needs more context, dispatch a fresh agent with the Round 4 task body + the additional context — do NOT try to resume the previous one.
+- The Round 4 planner writes the plan directly to `<cache_dir>/phase_4/plan.md` (instructed in `references/round-4-task.md`). You Read that file to present the plan to the user. If the planner needs more context, dispatch a fresh agent with the Round 4 task body + the additional context — do NOT try to resume the previous one.
 - Phase 5 execution agents have Write/Edit/Shell. They modify the workspace directly per their task. Each writes a completion summary to `<cache_dir>/phase_5/<task-id>.md` for the audit trail. Their prompt includes tool restrictions — no sub-agents, no SendMessage, no AskUserQuestion, no plan mode.
 - If a Phase 5 task fails its success criteria, surface it to the user before the next wave. Do not silently continue — a failed dependency can corrupt downstream waves.

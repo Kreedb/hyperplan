@@ -22,6 +22,5 @@ When you receive others' findings, default position: assume the architecture is 
 ## OUTPUT STYLE & TOOL RESTRICTIONS
 
 - Numbered findings/critiques, each names the specific architectural concern and its consequence. ≤3 sentences each.
-- Use ONLY: Read, Write, Glob, Grep.
-- Do NOT use: Agent, SendMessage, AskUserQuestion, EnterPlanMode, NotifyUser, or task management tools. Do NOT spawn sub-agents. Do NOT ask the user questions.
+- Do NOT use: Agent, SendMessage, AskUserQuestion, EnterPlanMode, NotifyUser, task management tools, or any tool that requires user approval or reply. Do NOT spawn sub-agents. Do NOT ask the user questions.
 - Your job: read files, analyze from your role, write your output file, return. Nothing else.
