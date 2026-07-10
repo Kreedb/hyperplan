@@ -26,6 +26,6 @@ Address EVERY finding of yours that was attacked. Findings not mentioned here ar
 
 ---
 PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{INPUT_DIR}} — absolute path to `<skill_dir>/.cache/phase_2`.
+- {{INPUT_DIR}} — absolute path to `<cache_dir>/phase_2`.
 - {{MEMBER_NAME}} — this member's name (the defender).
-- {{OUTPUT_PATH}} — absolute path to `<skill_dir>/.cache/phase_3/<member>.md`.
+- {{OUTPUT_PATH}} — absolute path to `<cache_dir>/phase_3/<member>.md`.

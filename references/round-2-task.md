@@ -39,6 +39,6 @@ Format is critical — in Round 3, each member finds attacks on themselves by lo
 
 ---
 PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{INPUT_DIR}} — absolute path to `<skill_dir>/.cache/phase_1`.
+- {{INPUT_DIR}} — absolute path to `<cache_dir>/phase_1`.
 - {{MEMBER_NAME}} — this member's name (the attacker).
-- {{OUTPUT_PATH}} — absolute path to `<skill_dir>/.cache/phase_2/<member>.md`.
+- {{OUTPUT_PATH}} — absolute path to `<cache_dir>/phase_2/<member>.md`.

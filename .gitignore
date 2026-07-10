@@ -1,1 +1,3 @@
+# Default <cache_dir> for the hyperplan skill (see SKILL.md Phase 0).
+# If <cache_dir> is overridden to a different in-repo path, update this line.
 .cache/

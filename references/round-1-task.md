@@ -27,4 +27,4 @@ Numbering matters — in Round 2, other members will reference your findings as 
 PLACEHOLDERS (orchestrator substitutes before dispatch):
 - {{USER_REQUEST}} — the user's planning request, verbatim.
 - {{MEMBER_NAME}} — this member's name (skeptic / validator / researcher / architect / creative).
-- {{OUTPUT_PATH}} — absolute path to `<skill_dir>/.cache/phase_1/<member>.md`.
+- {{OUTPUT_PATH}} — absolute path to `<cache_dir>/phase_1/<member>.md`.
