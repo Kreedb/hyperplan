@@ -72,11 +72,11 @@ Members do NOT send messages to each other through the Lead. Instead, every memb
 
 You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirmation in Phase 4. The Agent tool runs dispatched agents concurrently when you issue multiple Agent calls in a single message — use this for every parallel round and every execution wave.
 
-**Critical separation**: You (the Lead) do NOT distill insights and do NOT write the plan. The Round 4 planner owns distillation + formalization in a single dispatch — it writes the plan to `<cache_path>/phase_4/plan.md` itself. You Read that file, present it to the user, gate execution on confirmation, then dispatch parallel execution waves. You never inline-plan.
+**Critical separation**: You (the Lead) do NOT distill insights and do NOT write the plan. The Round 4 planner owns distillation + formalization in a single dispatch — it writes the plan to `<cache_path>/phase_4/plan.md` itself. You Read that file, surface its decision points to the user (not the whole plan verbatim), gate execution on confirmation, then dispatch parallel execution waves. You never inline-plan.
 
-**Variable passing**: Every dispatch uses `subagent_type: "general-purpose"`. Each round is a **FRESH dispatch** — a new agent with no memory of prior rounds. You do NOT resume agents between rounds. You do NOT track agent IDs across rounds. Templates live in `references/` with `{{VAR}}` markers. The Lead does NOT read templates and does NOT substitute placeholders. Instead, the Lead maintains a single file `<cache_path>/VARIABLES.md` containing the shared variables; each dispatch prompt tells the agent to Read that file + its own system prompt + task template. The agent interprets the {{VAR}} markers with the values from VARIABLES.md + its MEMBER_NAME (passed in the dispatch prompt). This keeps the Lead's context free of all template/member content (the Lead only ever reads `<cache_path>/phase_4/plan.md` to present the plan).
+**Variable passing**: Every dispatch uses `subagent_type: "general-purpose"`. Each round is a **FRESH dispatch** — a new agent with no memory of prior rounds. You do NOT resume agents between rounds. You do NOT track agent IDs across rounds. Templates live in `references/` with `{{VAR}}` markers. The Lead does NOT read templates and does NOT substitute placeholders. Instead, the Lead maintains a single file `<cache_path>/VARIABLES.md` containing the shared variables; each dispatch prompt tells the agent to Read that file + its own system prompt + task template. The agent interprets the {{VAR}} markers with the values from VARIABLES.md + its MEMBER_NAME (passed in the dispatch prompt). This keeps the Lead's context free of all template/member content (the Lead only ever reads `<cache_path>/phase_4/plan.md` to surface its decision points).
 
-**VARIABLES.md** (created in Phase 0, updated before each round — the Lead overwrites the whole file with Write):
+**VARIABLES.md** (created in Phase 0, updated before each round — the Lead edits the `ROUND` line via Edit; the other 4 values stay untouched):
 
 ```
 ROUND: <N>
@@ -134,7 +134,7 @@ The Lead does NOT read any `references/*.md` — the agent reads its own system 
    WORKSPACE: <workspace>
    CACHE_PATH: <cache_path>
    ```
-   Phase 1 uses `ROUND: 1` as set here. Before each subsequent phase the Lead overwrites the whole file with `ROUND: 2`, then `3`, then `4` (the other 4 values stay constant for the entire run).
+   Phase 1 uses `ROUND: 1` as set here. Before each subsequent phase the Lead edits the `ROUND` line to `2`, then `3`, then `4` (use Edit — do NOT rewrite the whole file; the other 4 values stay constant).
 
 ### Phase 1: Round 1 — Independent analysis (dispatch + write)
 
@@ -144,28 +144,24 @@ The Lead does NOT read any `references/*.md` — the agent reads its own system 
 
 ### Phase 2: Round 2 — Cross-attack (read phase_1, write phase_2)
 
-1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 2` (overwrite the whole file via Write; keep the other 4 values constant).
+1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 2` (use Edit to change only the `ROUND` line; leave the other 4 values untouched).
 2. Dispatch all members in **parallel** using the Unified dispatch shape. Each fresh agent reads all `phase_1/*.md` files, attacks all other members' findings, and writes to `<cache_path>/phase_2/<member_name>.md`.
 3. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_2/`.
 4. **Verify all member output files exist** using Glob (`<cache_path>/phase_2/*.md`). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
 
 ### Phase 3: Round 3 — Defense and refinement (read phase_2 + own phase_1, write phase_3)
 
-1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 3` (overwrite the whole file via Write; keep the other 4 values constant).
+1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 3` (use Edit to change only the `ROUND` line; leave the other 4 values untouched).
 2. Dispatch all members in **parallel** using the Unified dispatch shape. Each fresh agent reads its own `phase_1/<member_name>.md` AND all `phase_2/*.md` files, then defends/refines/concedes per finding and writes to `<cache_path>/phase_3/<member_name>.md`.
 3. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_3/`.
 4. **Verify all member output files exist** using Glob (`<cache_path>/phase_3/*.md`). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
 
 ### Phase 4: Round 4 — Distillation + plan formalization + user confirmation
 
-1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 4` (overwrite the whole file via Write; keep the other 4 values constant).
+1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 4` (use Edit to change only the `ROUND` line; leave the other 4 values untouched).
 2. Dispatch the planner using the Unified dispatch shape (`MEMBER_NAME: planner`). The planner reads all cache files (phases 1–3), distills survivors, and writes the executable plan to `<cache_path>/phase_4/plan.md`.
-3. **Read the plan** — Read `<cache_path>/phase_4/plan.md` to present it to the user.
-4. **Present the plan verbatim**, prefixed with: `*Plan derived from hyperplan adversarial review (3 rounds), distilled and formalized by the planner.*`
-5. **User confirmation gate** — ask the user whether to proceed with execution:
-   - **Proceed** → advance to Phase 5.
-   - **Modify** → dispatch a FRESH planner (Unified dispatch shape) with the user's feedback appended to the dispatch prompt. The planner overwrites `plan.md`. Re-Read and re-present. Loop until proceed or abort.
-   - **Abort** → skip Phase 5, go to Phase 6.
+3. **Read the plan** — Read `<cache_path>/phase_4/plan.md`. Do NOT dump it verbatim to the user. Identify the points that need user decision (the plan's "Open Questions" section + any unresolved trade-offs), and ask the user those questions via `AskUserQuestion`.
+4. **Execution gate** — ask the user whether to proceed to Phase 5 parallel execution. **Proceed** → advance to Phase 5. **Abort** → skip Phase 5, go to Phase 6.
 
 DO NOT enter Phase 5 without explicit user confirmation. DO NOT pre-distill or pre-draft the plan yourself — the planner owns this.
 
@@ -221,7 +217,7 @@ If any step fails, surface the error and note that stray agents can be stopped v
 | **Inlining member system prompts or task templates instead of dispatching agents to read `references/*.md`** | **Prompts drift from the canonical files. Dispatch the agent with the path to the relevant `references/` file + the path to `<cache_path>/VARIABLES.md`; the agent reads both files itself and interprets the {{VAR}} markers. SKILL.md is the workflow skeleton, not the prompt source.** |
 | **Inlining variable values into a dispatch prompt instead of using `<cache_path>/VARIABLES.md`** | **Scatters shared state across prompts and breaks the self-driven shape. The Lead maintains VARIABLES.md once in Phase 0; every dispatch points the agent to that file. Adding a phase = one ROUND update + one dispatch line, nothing else.** |
 | **Lead forwarding bundles between members instead of using the `<cache_path>` message bus** | **Defeats the filesystem-bus design. Members read each other's files directly from `<cache_path>/phase_N/`. The Lead's context must stay clean — never paste member output into a dispatch prompt.** |
-| **Lead reading `<cache_path>/phase_1..3/` files OR `references/round-N-task.md` templates** | **Unnecessary context pressure. The round-4 planner reads phase_1..3 files; each member agent reads its own `references/round-N-task.md` template. The Lead only reads `<cache_path>/phase_4/plan.md` (to present the plan). Phases 1–3 only need the completion signal (agents returned), not the content.** |
+| **Lead reading `<cache_path>/phase_1..3/` files OR `references/round-N-task.md` templates** | **Unnecessary context pressure. The round-4 planner reads phase_1..3 files; each member agent reads its own `references/round-N-task.md` template. The Lead only reads `<cache_path>/phase_4/plan.md` (to surface its decision points). Phases 1–3 only need the completion signal (agents returned), not the content.** |
 | **Relying on agent memory between rounds instead of the filesystem bus** | **Agents are fresh each round — they have zero memory of prior rounds. All context must flow through `<cache_path>/phase_N/`. Round 3 agents must read their own `phase_1/<member>.md` to recall their findings; without it they have nothing to defend.** |
 | **Dispatching Round N+1 without verifying Round N's output files exist** | **If a member agent failed silently, its output file is missing. The next round's agents will error trying to Read it. Always Glob-verify all member output files before dispatching the next round.** |
 | **Hardcoding `.cache` paths instead of referencing `<cache_path>`** | **Scatters the cache location across files. `<cache_path>` is resolved once in Phase 0; every other reference (SKILL.md + templates) uses the symbol. To relocate, change only Phase 0.** |
@@ -237,6 +233,6 @@ If any step fails, surface the error and note that stray agents can be stopped v
 - The Lead NEVER reads `<cache_path>/phase_1..3/` files NOR `references/round-N-task.md` templates. The round-4 planner reads phase_1..3; each member agent reads its own template. Phases 1–3 coordinate timing only — member content flows member-to-member through the filesystem, never through the Lead.
 - Members read each other's files directly. The Round 2 template tells each fresh agent to Read all `phase_1/*.md` files; the Round 3 template tells each fresh agent to Read its own `phase_1/<member_name>.md` (to recall its findings) AND all `phase_2/*.md` files (to find attacks on itself). File formats in the templates are parse-critical — do not improvise them.
 - The skill explicitly forbids you from softening adversarial prompts. The hostility IS the mechanism.
-- The Round 4 planner writes the plan directly to `<cache_path>/phase_4/plan.md` (instructed in `references/round-4-task.md`). You Read that file to present the plan to the user. If the planner needs more context, dispatch a fresh planner using the Unified dispatch shape (`ROUND: 4`) with the additional context appended to the prompt — do NOT try to resume the previous one.
+- The Round 4 planner writes the plan directly to `<cache_path>/phase_4/plan.md` (instructed in `references/round-4-task.md`). You Read that file, surface its decision points to the user (not the whole plan), then gate execution. If the planner needs more context, dispatch a fresh planner using the Unified dispatch shape with the additional context appended to the prompt — do NOT try to resume the previous one.
 - Phase 5 execution agents modify the workspace directly per their task. Each writes a completion summary to `<cache_path>/phase_5/<task-id>.md` for the audit trail. Their prompt includes tool restrictions — no sub-agents, no SendMessage, no AskUserQuestion, no plan mode.
 - If a Phase 5 task fails its success criteria, surface it to the user before the next wave. Do not silently continue — a failed dependency can corrupt downstream waves.
