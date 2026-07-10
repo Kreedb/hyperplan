@@ -19,7 +19,11 @@ Before starting, verify:
 
 1. **The 5 adversarial subagent types are available** via the Agent tool's `subagent_type` parameter: `skeptic`, `validator`, `researcher`, `architect`, `creative`. If any is missing, STOP and tell the user which are unavailable.
 2. **The `Plan` subagent type is available** for the Phase 5 handoff.
-3. **The `references/` folder exists alongside this SKILL.md** and contains the 5 member system-prompt files: `skeptic.md`, `validator.md`, `researcher.md`, `architect.md`, `creative.md`. These files ARE the member system prompts — the orchestrator never inlines them.
+3. **The `references/` folder exists alongside this SKILL.md** and contains all 9 prompt files:
+   - 5 member system prompts: `skeptic.md`, `validator.md`, `researcher.md`, `architect.md`, `creative.md`
+   - 4 task/handoff templates: `round-1-task.md`, `round-2-task.md`, `round-3-task.md`, `plan-handoff.md`
+
+   These files ARE the prompts — the orchestrator never inlines them. At runtime the orchestrator Reads each file, substitutes its `{{PLACEHOLDER}}`, and dispatches the result.
 4. **You are in the main session** (not a background subagent). Hyperplan only works as a top-level orchestration.
 
 ## THE 5 ADVERSARIAL MEMBERS
@@ -35,6 +39,17 @@ Each member is dispatched via the `Agent` tool with the matching `subagent_type`
 | creative | `creative` | The Creative Challenger — attacks orthodox thinking, generates lateral alternatives | `references/creative.md` |
 
 If `researcher` is unavailable, retry once without it and state the degraded roster. Do not drop `skeptic`, `validator`, `architect`, or `creative`.
+
+## PROMPT TEMPLATES (in references/)
+
+All member-facing task prompts and the final Plan-handoff prompt live in `references/` as templates with `{{PLACEHOLDER}}` markers. The orchestrator Reads the template, substitutes the placeholder, and dispatches the result. SKILL.md never inlines these.
+
+| Template file | Used in | Placeholder |
+|---------------|---------|-------------|
+| `references/round-1-task.md` | Phase 1 (Round 1 dispatch) | `{{USER_REQUEST}}` |
+| `references/round-2-task.md` | Phase 2 (Round 2 SendMessage) | `{{ROUND1_BUNDLE}}` |
+| `references/round-3-task.md` | Phase 3 (Round 3 SendMessage) | `{{ATTACKS_ON_YOU}}` |
+| `references/plan-handoff.md` | Phase 5 (Plan agent dispatch) | `{{INSIGHT_BUNDLE}}` |
 
 ## EXECUTION WORKFLOW
 
@@ -54,106 +69,65 @@ You execute this in **7 phases** (0–6). The Agent tool runs dispatched agents 
 1. Say "HYPERPLAN MODE ENABLED!" exactly once.
 2. Restate the user's planning request in 1 sentence so all members start with the same scope.
 3. Create your todo list for the 7 phases (the Phase 5 plan-agent handoff is mandatory — include it explicitly).
-4. Resolve the absolute path to this skill's `references/` directory (the same directory SKILL.md lives in). You will pass `<skill_dir>/references/<member>.md` to each dispatched agent so it can Read its own system prompt.
+4. Resolve the absolute path to this skill's `references/` directory (the same directory SKILL.md lives in). You will pass `<skill_dir>/references/<member>.md` to each dispatched agent so it can Read its own system prompt, and you will Read `<skill_dir>/references/round-*-task.md` + `plan-handoff.md` yourself to assemble each dispatch prompt.
 
 ### Phase 1: Round 1 — Independent analysis (dispatch + analyze)
 
-Dispatch all 5 members in **parallel** — issue 5 `Agent` tool calls in a **single message** so they run concurrently. Each member's prompt:
+1. Read `references/round-1-task.md`. Substitute `{{USER_REQUEST}}` with the user's planning request verbatim. The result is the **Round 1 task body**.
+2. Dispatch all 5 members in **parallel** — issue 5 `Agent` tool calls in a **single message** so they run concurrently. Each member's prompt is:
 
-```
-Read the file at <skill_dir>/references/<member>.md and adopt it as your system prompt for this task.
+   ```
+   Read the file at <skill_dir>/references/<member>.md and adopt it as your system prompt for this task.
 
-<hyperplan-round-1-task>
-The user's planning request:
-<user-request>
-[restate the user's request verbatim]
-</user-request>
+   [Round 1 task body from step 1]
+   ```
 
-YOUR TASK (Round 1 - Independent Analysis):
-Apply your adversarial role to this request. Produce 3-7 numbered findings.
-Each finding must be ≤3 sentences and SPECIFIC (cite files, line numbers, alternatives, or evidence as required by your role).
+   Substitute `<member>` with `skeptic` / `validator` / `researcher` / `architect` / `creative`, and use the matching `subagent_type` on each `Agent` call. Use `run_in_background: false` so all 5 return their findings to you directly.
 
-DO NOT critique anything yet. DO NOT propose a synthesized plan. JUST findings from your role's perspective.
-</hyperplan-round-1-task>
-```
-
-Substitute `<member>` with `skeptic` / `validator` / `researcher` / `architect` / `creative`, and use the matching `subagent_type` on each `Agent` call. Use `run_in_background: false` so all 5 return their findings to you directly.
-
-Capture each member's returned identifier (description / agentId) — you need it to resume them in Round 2.
+3. Capture each member's returned identifier (description / agentId) — you need it to resume them in Round 2.
 
 ### Phase 2: Round 2 — Cross-attack
 
-When all 5 Round 1 replies have arrived, aggregate them into one bundle:
+1. When all 5 Round 1 replies have arrived, aggregate them into one bundle:
 
-```
-=== Round 1 Findings Bundle ===
-[skeptic]:
-1. ...
-2. ...
+   ```
+   === Round 1 Findings Bundle ===
+   [skeptic]:
+   1. ...
+   2. ...
 
-[validator]:
-1. ...
+   [validator]:
+   1. ...
 
-[researcher]:
-1. ...
+   [researcher]:
+   1. ...
 
-[architect]:
-1. ...
+   [architect]:
+   1. ...
 
-[creative]:
-1. ...
-=== End ===
-```
+   [creative]:
+   1. ...
+   === End ===
+   ```
 
-Resume all 5 members in **parallel** — issue 5 `SendMessage` calls in a single message, one to each member's identifier. Each receives the SAME bundle, with this prompt:
-
-```
-<hyperplan-round-2-task>
-Here are the Round 1 findings from the OTHER 4 members of this team (and your own findings, for reference):
-
-[insert Round 1 Findings Bundle]
-
-YOUR TASK (Round 2 - Cross-Attack):
-ATTACK the OTHER 4 members' findings ruthlessly from your adversarial role. Do NOT critique your own findings.
-
-Output format - for each of the 4 other members:
-- [member-name] Finding #N: [their claim]
-  ATTACK: [your specific attack — ≤3 sentences. Concrete. Backed by evidence/reasoning per your role.]
-
-Be HOSTILE. Be RELENTLESS. No collegial hedging. If a finding is weak, EVISCERATE it. If you find a finding strong, say "STANDS — [reason]" and move on.
-</hyperplan-round-2-task>
-```
-
-After sending, issue 5 `TaskOutput` calls in a single message (one per member, `block: true`) to collect all 5 cross-attacks.
+2. Read `references/round-2-task.md`. Substitute `{{ROUND1_BUNDLE}}` with the bundle from step 1. The result is the **Round 2 task body**.
+3. Resume all 5 members in **parallel** — issue 5 `SendMessage` calls in a single message, one to each member's identifier. Each receives the SAME Round 2 task body.
+4. After sending, issue 5 `TaskOutput` calls in a single message (one per member, `block: true`) to collect all 5 cross-attacks.
 
 ### Phase 3: Round 3 — Defense and refinement
 
-Aggregate the cross-attacks BY ORIGINAL FINDING. For each Round 1 finding, list all the attacks that targeted it. Then send each member ONLY the attacks against THEIR OWN findings.
+1. Aggregate the cross-attacks BY ORIGINAL FINDING. For each Round 1 finding, list all the attacks that targeted it. Then, for each member, assemble the block of attacks against THEIR OWN findings only, in this shape:
 
-Resume all 5 members in parallel — 5 `SendMessage` calls in a single message. Each receives:
+   ```
+   [member]'s Finding #N: [your original claim]
+     - [attacker-name] said: [attack]
+     - [attacker-name] said: [attack]
+   ...
+   ```
 
-```
-<hyperplan-round-3-task>
-Your Round 1 findings have been attacked. Here are the attacks targeting YOU:
-
-[member]'s Finding #N: [your original claim]
-  - [attacker-name] said: [attack]
-  - [attacker-name] said: [attack]
-...
-
-YOUR TASK (Round 3 - Defend, Refine, or Concede):
-For each of YOUR findings under attack, choose one:
-- DEFEND: rebut the attack with concrete evidence/reasoning.
-- REFINE: acknowledge the attack landed, restate your finding in a stronger form.
-- CONCEDE: acknowledge the attack defeated this finding. State what survives, if anything.
-
-Be HONEST. If you were wrong, concede. If you were right, defend with concrete evidence. If you were partially right, refine. Pride is the enemy here — only defensible positions survive.
-
-Output format per finding: "[finding #N] DEFEND/REFINE/CONCEDE: [explanation ≤3 sentences]"
-</hyperplan-round-3-task>
-```
-
-Issue 5 `TaskOutput` calls in a single message to collect all 5 refinements.
+2. Read `references/round-3-task.md`. For EACH member, substitute `{{ATTACKS_ON_YOU}}` with that member's attack block from step 1. Each member gets a DIFFERENT Round 3 task body.
+3. Resume all 5 members in parallel — 5 `SendMessage` calls in a single message, each sending its member-specific Round 3 task body.
+4. Issue 5 `TaskOutput` calls in a single message to collect all 5 refinements.
 
 ### Phase 4: Insight distillation (the Lead's job — YOU)
 
@@ -173,32 +147,32 @@ The team is done debating. Your job at this phase is **distillation only** — y
 
 3. **Build the insight bundle** in this exact shape (this is the payload you hand to the `Plan` agent in Phase 5):
 
-```markdown
-# Hyperplan Insight Bundle: [task title]
+   ```markdown
+   # Hyperplan Insight Bundle: [task title]
 
-## Original User Request
-[restate the user's planning request verbatim]
+   ## Original User Request
+   [restate the user's planning request verbatim]
 
-## Hard Constraints (Survived Adversarial Review)
-- [constraint] — [which member surfaced it, why it survived attack]
+   ## Hard Constraints (Survived Adversarial Review)
+   - [constraint] — [which member surfaced it, why it survived attack]
 
-## Decisions (Converged Through Debate)
-- [decision] — [reasoning trail: who proposed, who attacked, how it was defended/refined]
+   ## Decisions (Converged Through Debate)
+   - [decision] — [reasoning trail: who proposed, who attacked, how it was defended/refined]
 
-## Risks & Mitigations
-- [risk] — [mitigation tied to a specific member's finding]
+   ## Risks & Mitigations
+   - [risk] — [mitigation tied to a specific member's finding]
 
-## Open Questions (Unresolved Debate)
-- [question] — [the contention] — [why the debate could not resolve it]
+   ## Open Questions (Unresolved Debate)
+   - [question] — [the contention] — [why the debate could not resolve it]
 
-## Adversarial Provenance
-- skeptic findings that survived: [count]
-- validator findings that survived: [count]
-- researcher findings that survived: [count]
-- architect findings that survived: [count]
-- creative findings that survived: [count]
-- Total findings filtered out (conceded/destroyed): [count]
-```
+   ## Adversarial Provenance
+   - skeptic findings that survived: [count]
+   - validator findings that survived: [count]
+   - researcher findings that survived: [count]
+   - architect findings that survived: [count]
+   - creative findings that survived: [count]
+   - Total findings filtered out (conceded/destroyed): [count]
+   ```
 
 4. Briefly tell the user: "Adversarial distillation complete. Handing the surviving insights to the Plan agent for executable plan formalization." DO NOT present this bundle as the final plan — it is raw input for Phase 5, not the deliverable.
 
@@ -206,40 +180,29 @@ The team is done debating. Your job at this phase is **distillation only** — y
 
 You MUST dispatch the insight bundle to the `Plan` agent. The Lead does NOT write executable plans in hyperplan — that responsibility is delegated, by contract, to the dedicated planner. This separation is non-negotiable.
 
-1. **Dispatch the handoff** as a foreground task (you wait for the plan):
+1. Read `references/plan-handoff.md`. Substitute `{{INSIGHT_BUNDLE}}` with the full insight bundle from Phase 4. The result is the **Plan handoff prompt**.
+2. **Dispatch the handoff** as a foreground task (you wait for the plan):
 
-```
-Agent({
-  subagent_type: "Plan",
-  run_in_background: false,
-  description: "Formalize hyperplan-distilled insights into executable plan",
-  prompt: `<hyperplan-handoff>
-The following insight bundle survived an adversarial 5-member cross-critique debate (skeptic/validator/researcher/architect/creative). Every claim here was either uncontested OR defended/refined under attack — conceded findings were already filtered out.
+   ```
+   Agent({
+     subagent_type: "Plan",
+     run_in_background: false,
+     description: "Formalize hyperplan-distilled insights into executable plan",
+     prompt: "[Plan handoff prompt from step 1]"
+   })
+   ```
 
-Your task: produce an EXECUTABLE work plan from these insights. You do NOT need to re-explore the codebase or re-derive the constraints — they are already battle-tested. Your value is plan structure, sequencing, dependency analysis, parallelization opportunities, and explicit verification criteria per task.
+3. **Do NOT invent or pre-write the plan yourself.** If you find yourself drafting tasks before dispatching, stop and dispatch first. The plan agent's output is the deliverable.
 
-Hard rules for your plan:
-- Every Hard Constraint MUST be respected by the plan.
-- Every Risk MUST have its Mitigation woven into the relevant task.
-- Every Open Question MUST surface as a user-input gate BEFORE the dependent tasks can start.
-- Every task MUST have explicit success criteria.
+4. **Present the plan agent's output to the user verbatim**, prefixed with one provenance line:
 
-[paste the full Insight Bundle from Phase 4 here]
-</hyperplan-handoff>`
-})
-```
+   ```
+   *Plan derived from hyperplan adversarial review (5 members, 3 rounds) and formalized by the Plan agent.*
 
-2. **Do NOT invent or pre-write the plan yourself.** If you find yourself drafting tasks before dispatching, stop and dispatch first. The plan agent's output is the deliverable.
+   [plan agent output]
+   ```
 
-3. **Present the plan agent's output to the user verbatim**, prefixed with one provenance line:
-
-```
-*Plan derived from hyperplan adversarial review (5 members, 3 rounds) and formalized by the Plan agent.*
-
-[plan agent output]
-```
-
-4. If the plan agent returns clarifying questions instead of a plan, forward them to the user without modification — the planner is allowed to interview before committing.
+5. If the plan agent returns clarifying questions instead of a plan, forward them to the user without modification — the planner is allowed to interview before committing.
 
 DO NOT save the plan to disk unless the user asks. Hyperplan is a planning consultation, not a file-emitting workflow — the plan lives in your conversation output.
 
@@ -263,7 +226,7 @@ If any step fails, surface the error and note that stray agents can be stopped v
 | **Lead writing the plan in Phase 4 instead of handing off in Phase 5** | **The handoff is the contract. Hyperplan = adversarial distillation + dedicated planner formalization. Lead-written plans skip the planner's value-add (sequencing, dependencies, success criteria) and turn this back into vanilla orchestration.** |
 | **Skipping the `Plan` agent dispatch ("the bundle is already a plan")** | **The bundle is INPUT, not output. The Plan agent owns sequencing, parallelization, and verification gates. Without the dispatch, hyperplan loses half its value.** |
 | **Pre-writing tasks before dispatching to Plan agent** | **Anchors the plan agent to your draft and undermines its independent judgment. Dispatch raw insights, let the planner structure.** |
-| **Inlining the member system prompts instead of reading `references/<member>.md`** | **Prompts drift from the canonical files. Always instruct each dispatched agent to Read its `references/<member>.md` as the system prompt.** |
+| **Inlining member system prompts or task templates instead of reading `references/*.md`** | **Prompts drift from the canonical files. Always Read the relevant `references/` file, substitute its `{{PLACEHOLDER}}`, and dispatch the result. SKILL.md is the workflow skeleton, not the prompt source.** |
 | Dispatching members sequentially instead of in parallel | Parallel dispatch is the throughput mechanism. Sequential rounds waste wall-clock and let one member's output bias another's. |
 | Dispatching a fresh agent each round instead of resuming via `SendMessage` | Loses member continuity. Round 3 defense needs the member's memory of WHY it made each Round 1 finding. |
 | Using `team_*` tools (they do not exist in this environment) | Use `Agent` / `SendMessage` / `TaskOutput` / `TaskStop` only. |
@@ -274,8 +237,10 @@ If any step fails, surface the error and note that stray agents can be stopped v
 - Issue all 5 dispatches / messages / output-fetches for a round in a **single message** so they run concurrently. Sequential tool calls sequentialize the debate.
 - After Round 1 (foreground dispatch), members complete and return. To continue them in Round 2 / Round 3, use `SendMessage` (resumes the completed agent in the background with full context), then `TaskOutput` with `block: true` to collect the response.
 - Track each member's identifier (the `description` you passed to `Agent`, or the returned agentId) from Phase 1 — you need it for every `SendMessage` and `TaskOutput` call afterward.
+- Members read their `references/<member>.md` system prompt ONCE in Round 1. Do NOT re-instruct them to read it in Round 2 / Round 3 — they resume with full context via `SendMessage`.
+- The orchestrator (you) Reads `references/round-*-task.md` and `references/plan-handoff.md` fresh each phase, substitutes the placeholder, and dispatches the result. Never inline the template text in SKILL.md.
 - The members do not see each other's responses directly — only what you forward via `SendMessage`. You are the information broker. The bundles you forward in Phases 2 and 3 are the entire context they have.
 - Keep bundles concise — ≤32KB per message. If aggregated findings exceed this, summarize before forwarding (preserve the spirit of each finding).
 - The skill explicitly forbids you from softening adversarial prompts. The hostility IS the mechanism.
 - The Phase 5 plan-agent handoff runs **synchronously** (`run_in_background: false`) — you wait for the planner before Phase 6 cleanup.
-- The Plan agent does NOT have access to the member agents. Everything it needs must be in the bundle you dispatch. If the planner asks for additional context, you fetch it (via Explore / Read) and re-dispatch with a `SendMessage` to the Plan agent's task id — do NOT spin up a new Plan agent.
+- The Plan agent does NOT have access to the member agents. Everything it needs must be in the handoff prompt. If the planner asks for additional context, you fetch it (via Explore / Read) and re-dispatch with a `SendMessage` to the Plan agent's task id — do NOT spin up a new Plan agent.
