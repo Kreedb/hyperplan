@@ -80,8 +80,3 @@ CONSTRAINTS:
 - If open questions block a task, mark that task's dependencies as requiring user resolution first.
 - Do NOT include a "review" or "cleanup" task — the Lead handles those out-of-band.
 </hyperplan-round-4-task>
-
----
-VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
-- {{CACHE_PATH}} — absolute path to the cache directory. The planner reads all debate files from here.
-- {{USER_REQUEST}} — the user's planning request, verbatim. Included so the planner can check distilled insights against the original intent.

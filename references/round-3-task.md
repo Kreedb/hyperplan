@@ -27,8 +27,3 @@ OUTPUT — Write your defenses to {{CACHE_PATH}}/phase_3/{{MEMBER_NAME}}.md usin
 
 Address EVERY finding of yours that was attacked. Findings not mentioned here are treated as CONCEDED by default. The planner drops conceded findings and keeps defended/refined ones.
 </hyperplan-round-3-task>
-
----
-VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
-- {{CACHE_PATH}} — absolute path to the cache directory.
-- {{MEMBER_NAME}} — this member's name (the defender).

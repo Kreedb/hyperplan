@@ -22,9 +22,3 @@ OUTPUT — Write your findings to {{CACHE_PATH}}/phase_1/{{MEMBER_NAME}}.md usin
 
 Numbering matters — in Round 2, other members will reference your findings as "{{MEMBER_NAME}} Finding #N". Keep the numbers stable and explicit.
 </hyperplan-round-1-task>
-
----
-VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
-- {{USER_REQUEST}} — the user's planning request, verbatim.
-- {{MEMBER_NAME}} — this member's name.
-- {{CACHE_PATH}} — absolute path to the cache directory.

@@ -20,8 +20,3 @@ OUTPUT — Write your cross-attacks to {{CACHE_PATH}}/phase_2/{{MEMBER_NAME}}.md
 
 [Repeat the "## Attacks on <member-name>" section for EACH other member you attack. Replace <member-name> with the actual member name. Omit any member you have no attacks against. Keep the "## Attacks on <name>" headers verbatim — Round 3 members locate attacks on themselves by finding that exact header.]
 </hyperplan-round-2-task>
-
----
-VARIABLES REFERENCED (the Lead provides these in the dispatch prompt's VARIABLES block; the agent reads this template and interprets the {{VAR}} markers with the provided values — no string substitution by the Lead):
-- {{CACHE_PATH}} — absolute path to the cache directory.
-- {{MEMBER_NAME}} — this member's name (the attacker).
