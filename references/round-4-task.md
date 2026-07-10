@@ -66,7 +66,6 @@ RETURN the full plan as your final message. Do NOT use the Write tool — you do
 - Description: [what to do, concretely — a single agent must be able to complete this in one dispatch]
 - Dependencies: [task IDs that must complete first, or "none"]
 - Success criteria: [how to verify this task is done — observable, testable]
-- Agent type: [general-purpose | Explore | Plan | architect | skeptic | validator | researcher | creative]
 - Files likely touched: [paths, if known]
 
 ### Task 2: [short imperative title]
