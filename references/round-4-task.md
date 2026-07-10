@@ -10,7 +10,7 @@ YOUR TASK (Round 4 — Distill + Formalize):
 You are the dedicated planner. The adversarial team has completed 3 rounds of debate. You OWN two jobs in this single dispatch: (1) distill the surviving insights from the debate artifacts, (2) formalize them into an executable plan with parallelizable tasks. Do not split these — distillation informs the plan, and the plan is meaningless without the distilled constraints.
 
 STEP 1 — READ THE DEBATE ARTIFACTS
-Read ALL .md files under {{CACHE_PATH}}/ using the Read tool. Use Glob to discover them:
+Read ALL .md files under {{CACHE_PATH}}/ using the Read tool. Discover them by listing each phase directory:
 - {{CACHE_PATH}}/phase_1/*.md — Round 1 original findings (the raw positions)
 - {{CACHE_PATH}}/phase_2/*.md — Round 2 cross-attacks (what was contested, and by whom)
 - {{CACHE_PATH}}/phase_3/*.md — Round 3 defenses (DEFEND / REFINE / CONCEDE per finding)

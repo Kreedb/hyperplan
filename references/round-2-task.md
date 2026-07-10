@@ -2,7 +2,7 @@
 
 <hyperplan-round-2-task>
 YOUR TASK (Round 2 - Cross-Attack):
-Read ALL Round 1 findings files from {{CACHE_PATH}}/phase_1/ — use Glob to list every .md file, then Read each one (including your own, for reference).
+Read ALL Round 1 findings files from {{CACHE_PATH}}/phase_1/ — list every .md file in that directory, then Read each one (including your own, for reference).
 
 ATTACK the OTHER members' findings ruthlessly from your adversarial role. Do NOT critique your own findings. Attack every member except yourself.
 

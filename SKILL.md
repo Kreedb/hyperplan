@@ -38,7 +38,7 @@ Every member is dispatched via the `Agent` tool with `subagent_type: "general-pu
 | creative | The Creative Challenger — attacks orthodox thinking, generates lateral alternatives | `references/creative.md` |
 | planner | The Planner — stands above the fray, distills survivors, formalizes the executable plan (round-4 only) | `references/planner.md` |
 
-All debate members (skeptic/validator/researcher/architect/creative) are always dispatched in rounds 1–3. The planner is dispatched once in round 4. If a member agent fails (caught by the post-round `python -c` verification), retry that member once; if it still fails, ask the user whether to proceed with a degraded roster.
+All debate members (skeptic/validator/researcher/architect/creative) are always dispatched in rounds 1–3. The planner is dispatched once in round 4. If a member agent fails, retry that member once; if it still fails, ask the user whether to proceed with a degraded roster.
 
 ## FILESYSTEM MESSAGE BUS (`<cache_path>`)
 
@@ -121,7 +121,7 @@ The Lead does NOT read any `references/*.md` — the agent reads its own system 
    - `<skill_path>` — the directory this SKILL.md lives in. All `references/` paths derive from it. Stored in VARIABLES.md as `SKILL_PATH`.
    - `<workspace>` — the current working directory of the session (the project being planned). Stored in VARIABLES.md as `WORKSPACE`.
    - `<cache_path>` — the debate cache directory. Defaults to `<workspace>/.cache`. If the user specifies a different location (or the environment prefers one), override here. Stored in VARIABLES.md as `CACHE_PATH`.
-5. Pre-create the cache directory structure. Use Shell with `python -c` to create `phase_1` through `phase_5` subdirectories under `<cache_path>/`:
+5. Pre-create the cache directory structure with `python -c` (creates `phase_1` through `phase_5` under `<cache_path>/`):
    ```
    python -c "import os; [os.makedirs(os.path.join(r'<cache_path>', f'phase_{i}'), exist_ok=True) for i in range(1,6)]"
    ```
@@ -140,33 +140,21 @@ The Lead does NOT read any `references/*.md` — the agent reads its own system 
 
 1. Dispatch all members in **parallel** using the Unified dispatch shape (VARIABLES.md already has `ROUND: 1` from Phase 0). The calls go in a **single message** so they run concurrently.
 2. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_1/`. Do NOT read those files yourself.
-3. **Verify all member output files exist** using Shell (`python -c` is used instead of Glob because Glob returns nothing when the full path is passed in its `pattern` parameter — only the `path`+`pattern` split works, which is easy to get wrong):
-   ```
-   python -c "import os; d=os.path.join(r'<cache_path>','phase_1'); fs=[f for f in os.listdir(d) if f.endswith('.md')]; print(len(fs), sorted(fs))"
-   ```
-   Compare the printed list against the members you dispatched. If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded. Do NOT dispatch Round 2 until all member files are present (or the user approves a degraded roster).
+3. **Verify all member output files exist** in `<cache_path>/phase_1/` (enumeration command in NOTES). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded. Do NOT dispatch Round 2 until all member files are present (or the user approves a degraded roster).
 
 ### Phase 2: Round 2 — Cross-attack (read phase_1, write phase_2)
 
 1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 2` (use Edit to change only the `ROUND` line; leave the other 4 values untouched).
 2. Dispatch all members in **parallel** using the Unified dispatch shape. Each fresh agent reads all `phase_1/*.md` files, attacks all other members' findings, and writes to `<cache_path>/phase_2/<member_name>.md`.
 3. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_2/`.
-4. **Verify all member output files exist** using Shell (same `python -c` enumeration as Phase 1):
-   ```
-   python -c "import os; d=os.path.join(r'<cache_path>','phase_2'); fs=[f for f in os.listdir(d) if f.endswith('.md')]; print(len(fs), sorted(fs))"
-   ```
-   Compare against the members you dispatched. If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
+4. **Verify all member output files exist** in `<cache_path>/phase_2/` (enumeration command in NOTES). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
 
 ### Phase 3: Round 3 — Defense and refinement (read phase_2 + own phase_1, write phase_3)
 
 1. Update `<cache_path>/VARIABLES.md`: set `ROUND: 3` (use Edit to change only the `ROUND` line; leave the other 4 values untouched).
 2. Dispatch all members in **parallel** using the Unified dispatch shape. Each fresh agent reads its own `phase_1/<member_name>.md` AND all `phase_2/*.md` files, then defends/refines/concedes per finding and writes to `<cache_path>/phase_3/<member_name>.md`.
 3. All agents return when complete. Their outputs are on disk in `<cache_path>/phase_3/`.
-4. **Verify all member output files exist** using Shell (same `python -c` enumeration as Phase 1):
-   ```
-   python -c "import os; d=os.path.join(r'<cache_path>','phase_3'); fs=[f for f in os.listdir(d) if f.endswith('.md')]; print(len(fs), sorted(fs))"
-   ```
-   Compare against the members you dispatched. If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
+4. **Verify all member output files exist** in `<cache_path>/phase_3/` (enumeration command in NOTES). If any are missing, a member agent failed — report to the user and ask whether to retry or proceed degraded.
 
 ### Phase 4: Round 4 — Distillation + plan formalization + user confirmation
 
@@ -231,7 +219,7 @@ If any step fails, surface the error and note that stray agents can be stopped v
 | Lead forwarding bundles between members instead of using the `<cache_path>` message bus | Defeats the filesystem-bus design. Members read each other's files directly from `<cache_path>/phase_N/`. The Lead's context must stay clean — never paste member output into a dispatch prompt. |
 | Lead reading `<cache_path>/phase_1..3/` files OR `references/round-N-task.md` templates | Unnecessary context pressure. The round-4 planner reads phase_1..3 files; each member agent reads its own `references/round-N-task.md` template. The Lead only reads `<cache_path>/phase_4/plan.md` (to surface its decision points). Phases 1–3 only need the completion signal (agents returned), not the content. |
 | Relying on agent memory between rounds instead of the filesystem bus | Agents are fresh each round — they have zero memory of prior rounds. All context must flow through `<cache_path>/phase_N/`. Round 3 agents must read their own `phase_1/<member>.md` to recall their findings; without it they have nothing to defend. |
-| Dispatching Round N+1 without verifying Round N's output files exist | If a member agent failed silently, its output file is missing. The next round's agents will error trying to Read it. Always `python -c`-verify all member output files before dispatching the next round. |
+| Dispatching Round N+1 without verifying Round N's output files exist | If a member agent failed silently, its output file is missing. The next round's agents will error trying to Read it. Always verify all member output files before dispatching the next round. |
 | Hardcoding `.cache` paths instead of referencing `<cache_path>` | Scatters the cache location across files. `<cache_path>` is resolved once in Phase 0; every other reference (SKILL.md + templates) uses the symbol. To relocate, change only Phase 0. |
 | Dispatching members sequentially instead of in parallel | Parallel dispatch is the throughput mechanism. Sequential rounds waste wall-clock and let one member's output bias another's. |
 | Using `SendMessage`/`TaskOutput` for inter-round communication | Agents are fresh each round — completed agents cannot be resumed. Use `Agent` (fresh dispatch per round) and `TaskStop` (cleanup only). |
@@ -240,7 +228,8 @@ If any step fails, surface the error and note that stray agents can be stopped v
 ## NOTES FOR THE LEAD (YOU)
 
 - Issue all member dispatches for a round in a **single message** so they run concurrently. Sequential tool calls sequentialize the debate.
-- **Every round is a FRESH `Agent` dispatch.** Each round: update `ROUND` in `<cache_path>/VARIABLES.md`, then dispatch via the Unified dispatch shape (one fresh `Agent` call per member in one message, `MEMBER_NAME` in the dispatch prompt), wait for all to return, `python -c`-verify outputs. Agents read VARIABLES.md + their own system prompt + task template; the Lead does NOT read templates.
+- **Verify a round completed** by enumerating its output files (Phases 1–3 reference this as "the enumeration command in NOTES"): `python -c "import os; d=os.path.join(r'<cache_path>','phase_N'); print(sorted(f for f in os.listdir(d) if f.endswith('.md')))"` — replace `phase_N` with the round just completed. Do NOT use Glob; it silently returns no results when the full path is passed in `pattern`.
+- **Every round is a FRESH `Agent` dispatch.** Each round: update `ROUND` in `<cache_path>/VARIABLES.md`, then dispatch via the Unified dispatch shape (one fresh `Agent` call per member in one message, `MEMBER_NAME` in the dispatch prompt), wait for all to return, verify outputs. Agents read VARIABLES.md + their own system prompt + task template; the Lead does NOT read templates.
 - Members read each other's files directly. The Round 2 template tells each fresh agent to Read all `phase_1/*.md` files; the Round 3 template tells each fresh agent to Read its own `phase_1/<member_name>.md` (to recall its findings) AND all `phase_2/*.md` files (to find attacks on itself). File formats in the templates are parse-critical — do not improvise them.
 - The Round 4 planner writes the plan directly to `<cache_path>/phase_4/plan.md` (instructed in `references/round-4-task.md`). You Read that file, surface its decision points to the user (not the whole plan), then gate execution. If the planner needs more context, dispatch a fresh planner using the Unified dispatch shape with the additional context appended to the prompt — do NOT try to resume the previous one.
 - Phase 5 execution agents modify the workspace directly per their task. Each writes a completion summary to `<cache_path>/phase_5/<task-id>.md` for the audit trail. Their prompt includes tool restrictions — no sub-agents, no SendMessage, no AskUserQuestion, no plan mode.

@@ -6,7 +6,7 @@ You are a FRESH agent with no memory of Round 1. Your own findings live on disk.
 
 FIRST, read your own Round 1 findings from {{CACHE_PATH}}/phase_1/{{MEMBER_NAME}}.md to recall what you originally claimed. These are the findings you must defend, refine, or concede.
 
-THEN, read ALL Round 2 cross-attack files from {{CACHE_PATH}}/phase_2/ — use Glob to list every .md file, then Read each one.
+THEN, read ALL Round 2 cross-attack files from {{CACHE_PATH}}/phase_2/ — list every .md file in that directory, then Read each one.
 
 In each file, locate the section "## Attacks on {{MEMBER_NAME}}" — that section contains the attacks targeting YOUR Round 1 findings. Collect every attack against you across all files (the other members' files may have a section targeting you; your own file will not, since you did not attack yourself).
 
