@@ -8,7 +8,7 @@ ATTACK the OTHER members' findings ruthlessly from your adversarial role. Do NOT
 
 Be HOSTILE. Be RELENTLESS. No collegial hedging. If a finding is weak, EVISCERATE it. If a finding is strong, omit it — only attack what you can break.
 
-OUTPUT — Write your cross-attacks to {{CACHE_PATH}}/phase_2/{{MEMBER_NAME}}.md using the Write tool. Use this EXACT format (in Round 3, each member will scan this file for the section targeting them):
+OUTPUT — Write your cross-attacks to {{CACHE_PATH}}/phase_2/{{MEMBER_NAME}}.md using the Write tool. Use this EXACT format:
 
 # Round 2 Cross-Attacks: {{MEMBER_NAME}} (attacker)
 
