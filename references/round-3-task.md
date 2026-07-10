@@ -2,7 +2,11 @@
 
 <hyperplan-round-3-task>
 YOUR TASK (Round 3 - Defend, Refine, or Concede):
-Read ALL Round 2 cross-attack files from {{INPUT_DIR}}/ (all 5 .md files: skeptic.md, validator.md, researcher.md, architect.md, creative.md). Use the Read tool on each file.
+You are a FRESH agent with no memory of Round 1. Your own findings live on disk.
+
+FIRST, read your own Round 1 findings from {{OWN_FINDINGS_PATH}} to recall what you originally claimed. These are the findings you must defend, refine, or concede.
+
+THEN, read ALL Round 2 cross-attack files from {{INPUT_DIR}}/ (all 5 .md files: skeptic.md, validator.md, researcher.md, architect.md, creative.md). Use the Read tool on each file.
 
 In each file, locate the section "## Attacks on {{MEMBER_NAME}}" — that section contains the attacks targeting YOUR Round 1 findings. Collect every attack against you across all 5 files (4 of them will have a section targeting you; your own file will not, since you did not attack yourself).
 
@@ -26,6 +30,7 @@ Address EVERY finding of yours that was attacked. Findings not mentioned here ar
 
 ---
 PLACEHOLDERS (orchestrator substitutes before dispatch):
+- {{OWN_FINDINGS_PATH}} — absolute path to `<cache_dir>/phase_1/<member>.md` (this member's own Round 1 findings, needed because the agent is fresh with no memory).
 - {{INPUT_DIR}} — absolute path to `<cache_dir>/phase_2`.
 - {{MEMBER_NAME}} — this member's name (the defender).
 - {{OUTPUT_PATH}} — absolute path to `<cache_dir>/phase_3/<member>.md`.
