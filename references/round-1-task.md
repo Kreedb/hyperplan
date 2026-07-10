@@ -12,7 +12,7 @@ Each finding must be ≤3 sentences and SPECIFIC (cite files, line numbers, alte
 
 DO NOT critique anything yet. DO NOT propose a synthesized plan. JUST findings from your role's perspective.
 
-OUTPUT — Write your findings to {{OUTPUT_PATH}} using the Write tool. Use this EXACT format (other members will parse it in Round 2):
+OUTPUT — Write your findings to {{CACHE_PATH}}/phase_1/{{MEMBER_NAME}}.md using the Write tool. Use this EXACT format (other members will parse it in Round 2):
 
 # Round 1 Findings: {{MEMBER_NAME}}
 
@@ -26,5 +26,5 @@ Numbering matters — in Round 2, other members will reference your findings as 
 ---
 PLACEHOLDERS (orchestrator substitutes before dispatch):
 - {{USER_REQUEST}} — the user's planning request, verbatim.
-- {{MEMBER_NAME}} — this member's name (skeptic / validator / researcher / architect / creative).
-- {{OUTPUT_PATH}} — absolute path to `<cache_dir>/phase_1/<member>.md`.
+- {{MEMBER_NAME}} — this member's name.
+- {{CACHE_PATH}} — absolute path to the cache directory (resolved in Phase 0).

@@ -10,10 +10,10 @@ YOUR TASK (Round 4 — Distill + Formalize):
 You are the dedicated planner. The adversarial team has completed 3 rounds of debate. You OWN two jobs in this single dispatch: (1) distill the surviving insights from the debate artifacts, (2) formalize them into an executable plan with parallelizable tasks. Do not split these — distillation informs the plan, and the plan is meaningless without the distilled constraints.
 
 STEP 1 — READ THE DEBATE ARTIFACTS
-Read ALL .md files under {{CACHE_DIR}}/ using the Read tool. Use Glob to discover them:
-- {{CACHE_DIR}}/phase_1/*.md — Round 1 original findings (the raw positions)
-- {{CACHE_DIR}}/phase_2/*.md — Round 2 cross-attacks (what was contested, and by whom)
-- {{CACHE_DIR}}/phase_3/*.md — Round 3 defenses (DEFEND / REFINE / CONCEDE per finding)
+Read ALL .md files under {{CACHE_PATH}}/ using the Read tool. Use Glob to discover them:
+- {{CACHE_PATH}}/phase_1/*.md — Round 1 original findings (the raw positions)
+- {{CACHE_PATH}}/phase_2/*.md — Round 2 cross-attacks (what was contested, and by whom)
+- {{CACHE_PATH}}/phase_3/*.md — Round 3 defenses (DEFEND / REFINE / CONCEDE per finding)
 
 STEP 2 — DISTILL SURVIVING INSIGHTS
 Keep findings that:
@@ -31,7 +31,7 @@ Categorize survivors into 4 buckets:
 STEP 3 — FORMALIZE THE EXECUTABLE PLAN
 Turn the distilled insights into discrete tasks. Structure each task for PARALLEL EXECUTION — the Lead will dispatch independent tasks concurrently in dependency-ordered waves. Minimize dependencies to maximize parallelism.
 
-Write the full plan to {{CACHE_DIR}}/phase_4/plan.md using the Write tool. Do NOT enter plan mode. Do NOT use task management tools, or any tool that requires user approval or reply. Return a one-line confirmation ('Plan written to {{CACHE_DIR}}/phase_4/plan.md') as your final message. Use this EXACT format:
+Write the full plan to {{CACHE_PATH}}/phase_4/plan.md using the Write tool. Do NOT enter plan mode. Do NOT use task management tools, or any tool that requires user approval or reply. Return a one-line confirmation ('Plan written to {{CACHE_PATH}}/phase_4/plan.md') as your final message. Use this EXACT format:
 
 # Hyperplan Executable Plan: [task title]
 
@@ -83,5 +83,5 @@ CONSTRAINTS:
 
 ---
 PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{CACHE_DIR}} — absolute path to the debate cache directory (resolved in Phase 0). The planner reads all debate files from here.
+- {{CACHE_PATH}} — absolute path to the cache directory (resolved in Phase 0). The planner reads all debate files from here.
 - {{USER_REQUEST}} — the user's planning request, verbatim. Included so the planner can check distilled insights against the original intent.

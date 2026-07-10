@@ -2,13 +2,13 @@
 
 <hyperplan-round-2-task>
 YOUR TASK (Round 2 - Cross-Attack):
-Read ALL Round 1 findings files from {{INPUT_DIR}}/ — use Glob to list every .md file, then Read each one (including your own, for reference).
+Read ALL Round 1 findings files from {{CACHE_PATH}}/phase_1/ — use Glob to list every .md file, then Read each one (including your own, for reference).
 
 ATTACK the OTHER members' findings ruthlessly from your adversarial role. Do NOT critique your own findings. Attack every member except yourself.
 
 Be HOSTILE. Be RELENTLESS. No collegial hedging. If a finding is weak, EVISCERATE it. If a finding is strong, omit it — only attack what you can break.
 
-OUTPUT — Write your cross-attacks to {{OUTPUT_PATH}} using the Write tool. Use this EXACT format (in Round 3, each member will scan this file for the section targeting them):
+OUTPUT — Write your cross-attacks to {{CACHE_PATH}}/phase_2/{{MEMBER_NAME}}.md using the Write tool. Use this EXACT format (in Round 3, each member will scan this file for the section targeting them):
 
 # Round 2 Cross-Attacks: {{MEMBER_NAME}} (attacker)
 
@@ -23,6 +23,5 @@ OUTPUT — Write your cross-attacks to {{OUTPUT_PATH}} using the Write tool. Use
 
 ---
 PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{INPUT_DIR}} — absolute path to `<cache_dir>/phase_1`.
+- {{CACHE_PATH}} — absolute path to the cache directory (resolved in Phase 0).
 - {{MEMBER_NAME}} — this member's name (the attacker).
-- {{OUTPUT_PATH}} — absolute path to `<cache_dir>/phase_2/<member>.md`.
