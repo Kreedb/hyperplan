@@ -7,20 +7,20 @@ The user's planning request:
 </user-request>
 
 YOUR TASK (Round 4 — Distill + Formalize):
-You are the dedicated planner. The 5-member adversarial team has completed 3 rounds of debate. You OWN two jobs in this single dispatch: (1) distill the surviving insights from the debate artifacts, (2) formalize them into an executable plan with parallelizable tasks. Do not split these — distillation informs the plan, and the plan is meaningless without the distilled constraints.
+You are the dedicated planner. The adversarial team has completed 3 rounds of debate. You OWN two jobs in this single dispatch: (1) distill the surviving insights from the debate artifacts, (2) formalize them into an executable plan with parallelizable tasks. Do not split these — distillation informs the plan, and the plan is meaningless without the distilled constraints.
 
 STEP 1 — READ THE DEBATE ARTIFACTS
-Read ALL 15 files under {{CACHE_DIR}}/ using the Read tool:
-- {{CACHE_DIR}}/phase_1/{skeptic,validator,researcher,architect,creative}.md — Round 1 original findings (the raw positions)
-- {{CACHE_DIR}}/phase_2/{skeptic,validator,researcher,architect,creative}.md — Round 2 cross-attacks (what was contested, and by whom)
-- {{CACHE_DIR}}/phase_3/{skeptic,validator,researcher,architect,creative}.md — Round 3 defenses (DEFEND / REFINE / CONCEDE per finding)
+Read ALL .md files under {{CACHE_DIR}}/ using the Read tool. Use Glob to discover them:
+- {{CACHE_DIR}}/phase_1/*.md — Round 1 original findings (the raw positions)
+- {{CACHE_DIR}}/phase_2/*.md — Round 2 cross-attacks (what was contested, and by whom)
+- {{CACHE_DIR}}/phase_3/*.md — Round 3 defenses (DEFEND / REFINE / CONCEDE per finding)
 
 STEP 2 — DISTILL SURVIVING INSIGHTS
 Keep findings that:
 - Were not attacked at all (uncontested), OR
 - Were DEFENDED successfully with concrete evidence in Round 3, OR
 - Were REFINED into stronger form in Round 3.
-Drop everything CONCEDED. Findings absent from a member's phase_3 file are treated as CONCEDED by default — the member gave up rather than defend.
+Drop everything CONCEDED. Cross-reference phase_2 (which records who attacked what) against phase_3: a finding that WAS attacked in Round 2 but appears nowhere in the member's phase_3 file (neither defended, refined, nor explicitly conceded) is treated as CONCEDED — the member gave up rather than defend. Uncontested findings (never attacked, so absent from phase_2 attacks) are KEPT per the first criterion.
 
 Categorize survivors into 4 buckets:
 - Hard constraints — invariants the plan MUST respect (violating these = guaranteed failure)
@@ -53,11 +53,7 @@ Write the full plan to {{CACHE_DIR}}/phase_4/plan.md using the Write tool. Do NO
 - [question] — [the contention] — [why the debate could not resolve it]
 
 ### Adversarial Provenance
-- skeptic findings survived: [count]
-- validator findings survived: [count]
-- researcher findings survived: [count]
-- architect findings survived: [count]
-- creative findings survived: [count]
+- <member-name> findings survived: [count]  (repeat one line per member)
 - Total findings filtered out (conceded/destroyed): [count]
 
 ## Execution Tasks
@@ -87,5 +83,5 @@ CONSTRAINTS:
 
 ---
 PLACEHOLDERS (orchestrator substitutes before dispatch):
-- {{CACHE_DIR}} — absolute path to the debate cache directory (resolved in Phase 0). The Plan agent reads the 15 debate files from here.
+- {{CACHE_DIR}} — absolute path to the debate cache directory (resolved in Phase 0). The planner reads all debate files from here.
 - {{USER_REQUEST}} — the user's planning request, verbatim. Included so the planner can check distilled insights against the original intent.

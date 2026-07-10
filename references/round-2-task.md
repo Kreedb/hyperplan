@@ -2,39 +2,23 @@
 
 <hyperplan-round-2-task>
 YOUR TASK (Round 2 - Cross-Attack):
-Read ALL Round 1 findings files from {{INPUT_DIR}}/ (all 5 .md files: skeptic.md, validator.md, researcher.md, architect.md, creative.md — INCLUDING your own, for reference). Use the Read tool on each file.
+Read ALL Round 1 findings files from {{INPUT_DIR}}/ — use Glob to list every .md file, then Read each one (including your own, for reference).
 
-ATTACK the OTHER 4 members' findings ruthlessly from your adversarial role. Do NOT critique your own findings.
+ATTACK the OTHER members' findings ruthlessly from your adversarial role. Do NOT critique your own findings. Attack every member except yourself.
 
 Be HOSTILE. Be RELENTLESS. No collegial hedging. If a finding is weak, EVISCERATE it. If a finding is strong, omit it — only attack what you can break.
 
-OUTPUT — Write your cross-attacks to {{OUTPUT_PATH}} using the Write tool. Use this EXACT format (in Round 3, each member will scan this file for sections targeting them):
+OUTPUT — Write your cross-attacks to {{OUTPUT_PATH}} using the Write tool. Use this EXACT format (in Round 3, each member will scan this file for the section targeting them):
 
 # Round 2 Cross-Attacks: {{MEMBER_NAME}} (attacker)
 
-## Attacks on skeptic
-- skeptic Finding #1: [their claim]
+## Attacks on <member-name>
+- <member-name> Finding #1: [their claim]
   ATTACK: [your specific attack — ≤3 sentences. Concrete. Backed by evidence/reasoning per your role.]
-- skeptic Finding #2: [their claim]
+- <member-name> Finding #2: [their claim]
   ATTACK: [your attack]
 
-## Attacks on validator
-- validator Finding #1: [their claim]
-  ATTACK: [your attack]
-
-## Attacks on researcher
-- researcher Finding #1: [their claim]
-  ATTACK: [your attack]
-
-## Attacks on architect
-- architect Finding #1: [their claim]
-  ATTACK: [your attack]
-
-## Attacks on creative
-- creative Finding #1: [their claim]
-  ATTACK: [your attack]
-
-Format is critical — in Round 3, each member finds attacks on themselves by locating the "## Attacks on <their-name>" section. Omit any member section where you have no attacks. Keep the "## Attacks on <name>" headers verbatim.
+[Repeat the "## Attacks on <member-name>" section for EACH other member you attack. Replace <member-name> with the actual member name. Omit any member you have no attacks against. Keep the "## Attacks on <name>" headers verbatim — Round 3 members locate attacks on themselves by finding that exact header.]
 </hyperplan-round-2-task>
 
 ---
