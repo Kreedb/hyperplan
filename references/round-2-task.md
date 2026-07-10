@@ -6,7 +6,7 @@ Read ALL Round 1 findings files from {{INPUT_DIR}}/ (all 5 .md files: skeptic.md
 
 ATTACK the OTHER 4 members' findings ruthlessly from your adversarial role. Do NOT critique your own findings.
 
-Be HOSTILE. Be RELENTLESS. No collegial hedging. If a finding is weak, EVISCERATE it. If you find a finding strong, say "STANDS — [reason]" and move on.
+Be HOSTILE. Be RELENTLESS. No collegial hedging. If a finding is weak, EVISCERATE it. If a finding is strong, omit it — only attack what you can break.
 
 OUTPUT — Write your cross-attacks to {{OUTPUT_PATH}} using the Write tool. Use this EXACT format (in Round 3, each member will scan this file for sections targeting them):
 
@@ -34,7 +34,7 @@ OUTPUT — Write your cross-attacks to {{OUTPUT_PATH}} using the Write tool. Use
 - creative Finding #1: [their claim]
   ATTACK: [your attack]
 
-Format is critical — in Round 3, each member finds attacks on themselves by locating the "## Attacks on <their-name>" section. Omit any member section where you have no attacks (e.g., your own section, since you do not attack yourself). Keep the "## Attacks on <name>" headers verbatim.
+Format is critical — in Round 3, each member finds attacks on themselves by locating the "## Attacks on <their-name>" section. Omit any member section where you have no attacks. Keep the "## Attacks on <name>" headers verbatim.
 </hyperplan-round-2-task>
 
 ---

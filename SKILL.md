@@ -29,7 +29,7 @@ Before starting, verify:
 
 ## THE 5 ADVERSARIAL MEMBERS
 
-Each member is dispatched via the `Agent` tool with the matching `subagent_type`. Their full adversarial system prompts live in `references/<member>.md` — at dispatch time, the orchestrator instructs each agent to read that file and adopt it as the system prompt for the task.
+Each member is dispatched via the `Agent` tool with the matching `subagent_type`. Their full adversarial system prompts live in `references/<member>.md` — at dispatch time, the orchestrator instructs each agent to read that file and adopt it as the system prompt for the task. Member system prompts include tool restrictions (Read/Write/Glob/Grep only) to prevent agents from spawning sub-agents, asking user questions, or entering plan mode.
 
 | Member | subagent_type | Role | System prompt file |
 |--------|---------------|------|--------------------|
@@ -65,7 +65,7 @@ Members do NOT send messages to each other through the Lead. Instead, every memb
 
 - `<cache_dir>` is resolved ONCE in Phase 0 (default `<workspace>/.cache`). Every other reference in this skill and in the templates uses the symbolic `<cache_dir>` — to relocate the cache, change only the Phase 0 definition.
 - `<cache_dir>/` is gitignored runtime state. It is left in place after the run for inspection; the user may delete it.
-- The Write tool auto-creates these directories on first write — no need to mkdir.
+- Directories are pre-created in Phase 0 (the Write tool may not auto-create parent directories).
 - The Lead NEVER reads `<cache_dir>/phase_1..3/*.md` — only the round-4 Plan agent reads them. Phases 1–3 never put member content into the Lead's context.
 
 ## PROMPT TEMPLATES (in references/)
@@ -87,9 +87,9 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
 
 ### Tooling map (how each phase talks to agents)
 
-- **Dispatch members (any round)**: `Agent` tool with `subagent_type: "<member>"`, `run_in_background: false`. Each round is a **FRESH dispatch** — a new agent with no memory of prior rounds. The agent reads the cache files it needs, writes its output, and returns. You do NOT resume agents between rounds. You do NOT track agent IDs across rounds.
-- **Round-4 dispatch (distillation + plan)**: `Agent` tool with `subagent_type: "Plan"`, `run_in_background: false`. The Plan agent reads the 15 cache files itself, distills, and returns the executable plan as its output. You persist it to `<cache_dir>/phase_4/plan.md`.
-- **Execution dispatch (Phase 5)**: `Agent` tool with `subagent_type: "<task's agent type>"` (default `general-purpose`), `run_in_background: false`, one call per task in a wave, all in a single message for parallelism.
+- **Dispatch members (any round)**: `Agent` tool with `subagent_type: "<member>"`, `run_in_background: false`, `description: "<member> round-N <role>"`. Each round is a **FRESH dispatch** — a new agent with no memory of prior rounds. The agent reads the cache files it needs, writes its output, and returns. You do NOT resume agents between rounds. You do NOT track agent IDs across rounds.
+- **Round-4 dispatch (distillation + plan)**: `Agent` tool with `subagent_type: "Plan"`, `run_in_background: false`, `description: "Distill formalize hyperplan plan"`. The Plan agent reads the 15 cache files itself, distills, and returns the executable plan as its output. You persist it to `<cache_dir>/phase_4/plan.md`.
+- **Execution dispatch (Phase 5)**: `Agent` tool with `subagent_type: "<task's agent type>"` (default `general-purpose`), `run_in_background: false`, `description: "Execute: <task title>"`, one call per task in a wave, all in a single message for parallelism.
 - **Stuck agent cleanup**: `TaskStop` with the agent's task id — use only if an agent hangs or errors and is still running.
 
 ### Phase 0: Acknowledge and capture the request
@@ -101,8 +101,13 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
    - `<skill_dir>` — the directory this SKILL.md lives in. All `references/` paths derive from it.
    - `<workspace>` — the current working directory of the session (the project being planned).
    - `<cache_dir>` — the debate cache directory. Defaults to `<workspace>/.cache`. If the user specifies a different location (or the environment prefers one), override here. All phase paths and template substitutions use `<cache_dir>`.
+5. Pre-create the cache directory structure. Use Shell with `python -c` to create `phase_1` through `phase_5` subdirectories under `<cache_dir>/`:
+   ```
+   python -c "import os; [os.makedirs(os.path.join(r'<cache_dir>', f'phase_{i}'), exist_ok=True) for i in range(1,6)]"
+   ```
+   (The Write tool may not auto-create parent directories.)
 
-### Phase 1: Round 1 — Independent analysis (fresh dispatch + write)
+### Phase 1: Round 1 — Independent analysis (dispatch + write)
 
 1. Read `references/round-1-task.md`. For each member, substitute:
    - `{{USER_REQUEST}}` → the user's planning request verbatim
@@ -110,7 +115,7 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
    - `{{OUTPUT_PATH}}` → `<cache_dir>/phase_1/<member>.md`
 
    The result is that member's **Round 1 task body**.
-2. Dispatch all 5 members in **parallel** — issue 5 `Agent` tool calls in a **single message** so they run concurrently. Each member's prompt is:
+2. Dispatch all 5 members in **parallel** — issue 5 `Agent` tool calls in a **single message** so they run concurrently. Each call uses `subagent_type: "<member>"`, `description: "<member> round-1 analysis"`, `run_in_background: false`. Each member's prompt is:
 
    ```
    Read the file at <skill_dir>/references/<member>.md and adopt it as your system prompt for this task.
@@ -118,11 +123,10 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
    [that member's Round 1 task body]
    ```
 
-   Use the matching `subagent_type` on each `Agent` call. Use `run_in_background: false` so all 5 return to you directly when done.
-
 3. All 5 agents return when complete. Their outputs are on disk in `<cache_dir>/phase_1/`. Do NOT read those files yourself — you do not need them.
+4. **Verify all 5 output files exist** using Glob (`<cache_dir>/phase_1/*.md`). If fewer than 5 files, a member agent failed — report to the user and ask whether to retry the failed member or proceed with a degraded roster. Do NOT dispatch Round 2 until all 5 files are present (or the user approves a degraded roster).
 
-### Phase 2: Round 2 — Cross-attack (fresh dispatch, read phase_1, write phase_2)
+### Phase 2: Round 2 — Cross-attack (read phase_1, write phase_2)
 
 1. Read `references/round-2-task.md`. For each member, substitute:
    - `{{INPUT_DIR}}` → `<cache_dir>/phase_1`
@@ -130,7 +134,7 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
    - `{{OUTPUT_PATH}}` → `<cache_dir>/phase_2/<member>.md`
 
    The result is that member's **Round 2 task body**.
-2. Dispatch all 5 members as **FRESH agents** in **parallel** — issue 5 `Agent` tool calls in a single message. Each member's prompt is:
+2. Dispatch all 5 members as fresh agents in **parallel** — issue 5 `Agent` tool calls in a single message. Each call uses `subagent_type: "<member>"`, `description: "<member> round-2 cross-attack"`. Each member's prompt is:
 
    ```
    Read the file at <skill_dir>/references/<member>.md and adopt it as your system prompt for this task.
@@ -138,11 +142,12 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
    [that member's Round 2 task body]
    ```
 
-   Use `run_in_background: false`. Each fresh agent reads all 5 `phase_1/*.md` files (including its own, for reference), attacks the other 4 members' findings, and writes to `<cache_dir>/phase_2/<member>.md`.
+   Each fresh agent reads all 5 `phase_1/*.md` files (including its own, for reference), attacks the other 4 members' findings, and writes to `<cache_dir>/phase_2/<member>.md`.
 
 3. All 5 agents return when complete. Their outputs are on disk in `<cache_dir>/phase_2/`.
+4. **Verify all 5 output files exist** using Glob (`<cache_dir>/phase_2/*.md`). If fewer than 5, a member agent failed — report to the user and ask whether to retry or proceed degraded.
 
-### Phase 3: Round 3 — Defense and refinement (fresh dispatch, read phase_2 + own phase_1, write phase_3)
+### Phase 3: Round 3 — Defense and refinement (read phase_2 + own phase_1, write phase_3)
 
 1. Read `references/round-3-task.md`. For each member, substitute:
    - `{{OWN_FINDINGS_PATH}}` → `<cache_dir>/phase_1/<member>.md` (the member's own Round 1 findings — needed because the agent is fresh with no memory)
@@ -151,7 +156,7 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
    - `{{OUTPUT_PATH}}` → `<cache_dir>/phase_3/<member>.md`
 
    The result is that member's **Round 3 task body**.
-2. Dispatch all 5 members as **FRESH agents** in **parallel** — issue 5 `Agent` tool calls in a single message. Each member's prompt is:
+2. Dispatch all 5 members as fresh agents in **parallel** — issue 5 `Agent` tool calls in a single message. Each call uses `subagent_type: "<member>"`, `description: "<member> round-3 defense"`. Each member's prompt is:
 
    ```
    Read the file at <skill_dir>/references/<member>.md and adopt it as your system prompt for this task.
@@ -159,9 +164,10 @@ You execute this in **7 phases** (0–6). Phase 5 is conditional on user confirm
    [that member's Round 3 task body]
    ```
 
-   Use `run_in_background: false`. Each fresh agent reads its own `phase_1/<member>.md` (to recall its findings), reads all 5 `phase_2/*.md` files (to find attacks on itself), then defends/refines/concedes per finding and writes to `<cache_dir>/phase_3/<member>.md`.
+   Each fresh agent reads its own `phase_1/<member>.md` (to recall its findings), reads all 5 `phase_2/*.md` files (to find attacks on itself), then defends/refines/concedes per finding and writes to `<cache_dir>/phase_3/<member>.md`.
 
 3. All 5 agents return when complete. Their outputs are on disk in `<cache_dir>/phase_3/`.
+4. **Verify all 5 output files exist** using Glob (`<cache_dir>/phase_3/*.md`). If fewer than 5, a member agent failed — report to the user and ask whether to retry or proceed degraded.
 
 ### Phase 4: Round 4 — Distillation + plan formalization (ONE Plan agent) + user confirmation
 
@@ -173,13 +179,13 @@ The team is done debating. You dispatch ONE Plan agent to read all 15 cache file
 
    The result is the **Round 4 task body**.
 
-2. Dispatch the Plan agent in the foreground (you wait for the plan):
+2. Dispatch the Plan agent in the foreground:
 
    ```
    Agent({
      subagent_type: "Plan",
      run_in_background: false,
-     description: "Distill + formalize hyperplan plan",
+     description: "Distill formalize hyperplan plan",
      prompt: "[Round 4 task body]"
    })
    ```
@@ -198,7 +204,7 @@ The team is done debating. You dispatch ONE Plan agent to read all 15 cache file
 
 5. **User confirmation gate** — ask the user whether to proceed with execution. Three outcomes:
    - **Proceed** → advance to Phase 5 (parallel execution).
-   - **Modify** → take the user's requested changes and dispatch a FRESH Plan agent. Append to the Round 4 task body: "The user reviewed the previous plan at `<cache_dir>/phase_4/plan.md` and requested these modifications: [user feedback]. Read the previous plan and the cache, then produce a revised plan." Overwrite `<cache_dir>/phase_4/plan.md` with the revised plan. Re-present to user. Loop until the user says proceed or abort.
+   - **Modify** → take the user's requested changes and dispatch a FRESH Plan agent. Append to the Round 4 task body: "The user reviewed the previous plan at `<cache_dir>/phase_4/plan.md` and requested these modifications: [user feedback]. Read the previous plan and revise it. You do NOT need to re-read the 15 debate files unless the feedback requires fundamental rethinking — the distilled insights are already in the previous plan." Overwrite `<cache_dir>/phase_4/plan.md` with the revised plan. Re-present to user. Loop until the user says proceed or abort.
    - **Abort** → skip Phase 5, go directly to Phase 6 cleanup.
 
 DO NOT enter Phase 5 without explicit user confirmation. DO NOT pre-distill or pre-draft the plan yourself — the Plan agent owns this. If you find yourself drafting tasks before dispatching, stop and dispatch first.
@@ -212,8 +218,12 @@ The user has confirmed the plan. You now execute it by dispatching parallel wave
 1. Parse the plan's "Execution Tasks" section. Each task has: ID/title, description, dependencies, success criteria, agent type, files likely touched.
 2. Parse the "Wave Structure" section to determine execution order. If the plan did not provide explicit waves, compute them yourself by topological sort on the dependency graph (Wave 1 = no dependencies; Wave N = all dependencies satisfied by Wave N-1).
 3. For each wave, in order:
-   a. Dispatch all tasks in the wave **IN PARALLEL** — one `Agent` call per task, all in a **single message** so they run concurrently. Use each task's specified `subagent_type` (default `general-purpose`). Use `run_in_background: false` so the wave's agents all return to you when done.
-   b. Each task agent's prompt must include: the task description, the success criteria, the relevant context from the plan, and an instruction to write a brief completion summary to `<cache_dir>/phase_5/<task-id>.md` (what was done, what files changed, whether success criteria were met).
+   a. Dispatch all tasks in the wave **IN PARALLEL** — one `Agent` call per task, all in a **single message** so they run concurrently. Each call uses `subagent_type: "<task's agent type>"` (default `general-purpose`), `description: "Execute: <task title>"`, `run_in_background: false`.
+   b. Each task agent's prompt must include:
+      - The task's full description and success criteria from the plan.
+      - Any hard constraints from the plan's "Distilled Insights" section that apply to this task.
+      - Instruction to write a brief completion summary to `<cache_dir>/phase_5/<task-id>.md` (what was done, what files changed, whether success criteria were met).
+      - Tool restriction: "Do NOT spawn sub-agents (no Agent tool). Do NOT use SendMessage or AskUserQuestion. Do NOT enter plan mode. Do the task directly with Read/Write/Edit/Shell/Glob/Grep."
    c. After the wave completes, Read the completion summaries under `<cache_dir>/phase_5/` to verify success criteria were met. If a task failed, surface the failure to the user before dispatching the next wave — ask whether to retry, skip, or abort.
 4. After the final wave completes, tell the user: "Hyperplan execution complete. [N] tasks executed across [M] waves." Summarize what changed in the workspace.
 5. Proceed to Phase 6.
@@ -244,6 +254,7 @@ If any step fails, surface the error and note that stray agents can be stopped v
 | **Lead forwarding bundles between members instead of using the `<cache_dir>` message bus** | **Defeats the filesystem-bus design. Members read each other's files directly from `<cache_dir>/phase_N/`. The Lead's context must stay clean — never paste member output into a dispatch prompt.** |
 | **Lead reading `<cache_dir>/phase_1..3/` files** | **Unnecessary context pressure. The round-4 Plan agent reads those files — not the Lead. Phases 1–3 only need the completion signal (agents returned), not the content.** |
 | **Relying on agent memory between rounds instead of the filesystem bus** | **Agents are fresh each round — they have zero memory of prior rounds. All context must flow through `<cache_dir>/phase_N/`. Round 3 agents must read their own `phase_1/<member>.md` to recall their findings; without it they have nothing to defend.** |
+| **Dispatching Round N+1 without verifying Round N's output files exist** | **If a member agent failed silently, its output file is missing. The next round's agents will error trying to Read it. Always Glob-verify all 5 files before dispatching the next round.** |
 | **Hardcoding `.cache` paths instead of referencing `<cache_dir>`** | **Scatters the cache location across files. `<cache_dir>` is resolved once in Phase 0; every other reference (SKILL.md + templates) uses the symbol. To relocate, change only Phase 0.** |
 | Dispatching members sequentially instead of in parallel | Parallel dispatch is the throughput mechanism. Sequential rounds waste wall-clock and let one member's output bias another's. |
 | Using `team_*` or `SendMessage`/`TaskOutput` for inter-round communication | Agents are fresh each round — there is nothing to resume. Use `Agent` (fresh dispatch per round) and `TaskStop` (cleanup only). |
@@ -252,14 +263,11 @@ If any step fails, surface the error and note that stray agents can be stopped v
 ## NOTES FOR THE LEAD (YOU)
 
 - Issue all 5 dispatches for a round in a **single message** so they run concurrently. Sequential tool calls sequentialize the debate.
-- **Every round is a FRESH `Agent` dispatch.** Agents do not persist between rounds. You do NOT track agent IDs across rounds. You do NOT use `SendMessage` or `TaskOutput` to resume agents. Each round: Read the template, substitute placeholders, dispatch 5 fresh `Agent` calls in one message, wait for all 5 to return.
-- The first line of every member dispatch prompt is: "Read the file at `<skill_dir>/references/<member>.md` and adopt it as your system prompt for this task." — then the task body. This is repeated every round because the agent is fresh.
-- The orchestrator (you) Reads `references/round-*-task.md` fresh each phase, substitutes the placeholders, and dispatches the result. Never inline the template text.
+- **Every round is a FRESH `Agent` dispatch.** Agents do not persist between rounds. You do NOT track agent IDs across rounds. You do NOT use `SendMessage` or `TaskOutput` to resume agents. Each round: Read the template, substitute placeholders, dispatch 5 fresh `Agent` calls in one message, wait for all 5 to return, Glob-verify outputs.
 - `<cache_dir>` is resolved once in Phase 0 and referenced symbolically everywhere after. The orchestrator computes `{{INPUT_DIR}}` / `{{OUTPUT_PATH}}` / `{{CACHE_DIR}}` / `{{OWN_FINDINGS_PATH}}` from `<cache_dir>` when substituting template placeholders — never hardcode `.cache` in a dispatch.
 - The orchestrator NEVER reads `<cache_dir>/phase_1..3/` files. The round-4 Plan agent reads them. Phases 1–3 coordinate timing only — member content flows member-to-member through the filesystem, never through the Lead.
 - Members read each other's files directly. The Round 2 template tells each fresh agent to Read all 5 `phase_1/*.md` files; the Round 3 template tells each fresh agent to Read its own `phase_1/<member>.md` (to recall its findings) AND all 5 `phase_2/*.md` files (to find attacks on itself). File formats in the templates are parse-critical — do not improvise them.
 - The skill explicitly forbids you from softening adversarial prompts. The hostility IS the mechanism.
-- The Phase 4 round-4 dispatch runs **synchronously** (`run_in_background: false`) — you wait for the plan before presenting it.
 - The round-4 Plan agent does NOT have the Write tool. It returns the plan as its output; you persist it to `<cache_dir>/phase_4/plan.md` yourself. If the Plan agent needs more context, dispatch a fresh Plan agent with the additional context — do NOT try to resume the previous one.
-- Phase 5 execution agents (default `general-purpose`) DO have Write/Edit/Shell. They modify the workspace directly per their task. Each writes a completion summary to `<cache_dir>/phase_5/<task-id>.md` for the audit trail.
+- Phase 5 execution agents (default `general-purpose`) DO have Write/Edit/Shell. They modify the workspace directly per their task. Each writes a completion summary to `<cache_dir>/phase_5/<task-id>.md` for the audit trail. Their prompt includes tool restrictions — no sub-agents, no SendMessage, no AskUserQuestion, no plan mode.
 - If a Phase 5 task fails its success criteria, surface it to the user before the next wave. Do not silently continue — a failed dependency can corrupt downstream waves.
