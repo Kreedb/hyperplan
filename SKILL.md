@@ -58,7 +58,7 @@ Members do NOT send messages to each other through the Lead. Instead, every memb
     └── ...
 ```
 
-- `<cache_dir>` is resolved ONCE in Phase 0 (default `<skill_dir>/.cache`). Every other reference in this skill and in the templates uses the symbolic `<cache_dir>` — to relocate the cache, change only the Phase 0 definition.
+- `<cache_dir>` is resolved ONCE in Phase 0 (default `<workspace>/.cache`). Every other reference in this skill and in the templates uses the symbolic `<cache_dir>` — to relocate the cache, change only the Phase 0 definition.
 - `<cache_dir>/` is gitignored runtime state. It is left in place after the run for inspection; the user may delete it.
 - The Write tool auto-creates these directories on first write — no need to mkdir.
 - The Lead reads `<cache_dir>/phase_3/*.md` (plus `phase_1/` and `phase_2/` for provenance) ONLY in Phase 4 for distillation. Phases 1–3 never put member content into the Lead's context.
@@ -92,9 +92,10 @@ You execute this in **7 phases** (0–6). The Agent tool runs dispatched agents 
 1. Say "HYPERPLAN MODE ENABLED!" exactly once.
 2. Restate the user's planning request in 1 sentence so all members start with the same scope.
 3. Create your todo list for the 7 phases (the Phase 5 plan-agent handoff is mandatory — include it explicitly).
-4. Resolve two absolute paths (the ONLY place these are configured — everything else references them symbolically):
+4. Resolve three absolute paths (the ONLY place these are configured — everything else references them symbolically):
    - `<skill_dir>` — the directory this SKILL.md lives in. All `references/` paths derive from it.
-   - `<cache_dir>` — the debate cache directory. Defaults to `<skill_dir>/.cache`. If the user specifies a different location (or the environment prefers one), override here. All phase paths and template substitutions use `<cache_dir>`.
+   - `<workspace>` — the current working directory of the session (the project being planned).
+   - `<cache_dir>` — the debate cache directory. Defaults to `<workspace>/.cache`. If the user specifies a different location (or the environment prefers one), override here. All phase paths and template substitutions use `<cache_dir>`.
 
 ### Phase 1: Round 1 — Independent analysis (dispatch + write)
 

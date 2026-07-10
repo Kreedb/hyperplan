@@ -1,3 +1,4 @@
-# Default <cache_dir> for the hyperplan skill (see SKILL.md Phase 0).
-# If <cache_dir> is overridden to a different in-repo path, update this line.
+# Default <cache_dir> for the hyperplan skill is <workspace>/.cache (see SKILL.md Phase 0).
+# This entry covers the case where <workspace> == <skill_dir>. If <cache_dir> is overridden
+# to a different in-repo path, update both this file and the workspace's .gitignore.
 .cache/
